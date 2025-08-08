@@ -13,11 +13,22 @@ export default function App() {
   const [error, setError] = useState('')
 
   useEffect(() => {
-    // load the provided data.json from project root
+    // Try to load `data.json` as a static asset first (if placed under /public)
     fetch('/data.json')
-      .then(r => r.json())
+      .then(async r => {
+        if (!r.ok) throw new Error('not ok')
+        return r.json()
+      })
       .then(setCatalog)
-      .catch(() => setError('Failed to load data.json'))
+      .catch(async () => {
+        // Fallback: import from project root so dev works without moving the file
+        try {
+          const mod = await import('../data.json')
+          setCatalog(mod.default || mod)
+        } catch (e) {
+          setError('Failed to load data.json')
+        }
+      })
   }, [])
 
   const vectorIds = useMemo(() => selectedVectors.map(v => v.vectorId), [selectedVectors])
